@@ -1140,13 +1140,31 @@ Nossa equipe está à disposição para verificar o problema e orientar a melhor
   function computeProgressTarget(settings) {
     const selectedStars = [1, 2, 3, 4, 5].filter(star => settings.processStars[String(star)] || settings.processStars[star]);
     let total = null;
-
-    if (selectedStars.length > 0 && selectedStars.length < 5) {
-      const sum = selectedStars.reduce((acc, star) => acc + (getStarCount(star) || 0), 0);
-      if (sum > 0) total = sum;
+  
+    // Preferir o resumo da API/cache, porque no envio real a lista da Shopee pode
+    // atualizar/remover itens logo após enviar e a leitura direta do DOM pode falhar.
+    if (ratingSummaryCache?.stars && selectedStars.length > 0) {
+      const sumFromCache = selectedStars.reduce((acc, star) => acc + (Number(ratingSummaryCache.stars?.[star]) || 0), 0);
+      if (sumFromCache > 0) total = sumFromCache;
     }
-
+  
+    if (!total && selectedStars.length > 0 && selectedStars.length < 5) {
+      const sumFromDom = selectedStars.reduce((acc, star) => acc + (getStarCount(star) || 0), 0);
+      if (sumFromDom > 0) total = sumFromDom;
+    }
+  
     if (!total) total = getToReplyCount();
+  
+    // Fallback para garantir que o painel compacto tenha uma meta de progresso
+    // mesmo quando a Shopee não devolve contagem confiável no modo de envio real.
+    if (!total) {
+      const visibleMatching = getReplyButtons().filter(btn => {
+        const rating = getRatingFromCard(getReviewCard(btn));
+        return settings.processStars[String(rating)] || settings.processStars[rating];
+      }).length;
+      if (visibleMatching > 0) total = visibleMatching;
+    }
+  
     if (settings.maxReplies > 0) total = total ? Math.min(total, settings.maxReplies) : settings.maxReplies;
     return total && total > 0 ? total : null;
   }
@@ -1229,21 +1247,31 @@ Nossa equipe está à disposição para verificar o problema e orientar a melhor
     const panel = document.getElementById(PANEL_ID);
     if (!panel) return;
     const done = counters.sent + counters.dryRuns;
-    const percent = progressTotal ? Math.min(100, Math.round((done / progressTotal) * 100)) : 0;
+  
+    // Se a meta sumir por falha de leitura da Shopee, usa o limite configurado
+    // como fallback. Isso evita barra vazia no modo real.
+    const fallbackTotal = settingsCache?.maxReplies > 0 ? settingsCache.maxReplies : null;
+    const effectiveTotal = progressTotal || fallbackTotal;
+    const percent = effectiveTotal ? Math.min(100, Math.round((done / effectiveTotal) * 100)) : 0;
     const fill = panel.querySelector('.ldb-progress-fill');
     const label = panel.querySelector('.ldb-progress-label');
     const detail = panel.querySelector('.ldb-progress-detail');
     const title = panel.querySelector('.ldb-progress-title');
-    if (fill) fill.style.width = `${percent}%`;
+  
+    if (fill) fill.style.setProperty('width', `${percent}%`, 'important');
+  
     if (title) title.textContent = settingsCache?.dryRun ? '📊 Progresso (modo teste)' : '📊 Progresso';
+  
     if (label) {
-      label.textContent = progressTotal
-        ? `${done}/${progressTotal} (${percent}%)`
+      label.textContent = effectiveTotal
+        ? `${done}/${effectiveTotal} (${percent}%)`
         : `${done} processada(s)`;
     }
+  
     if (detail) {
       detail.textContent = `✅ Sucesso: ${done} · 🚫 Ignoradas: ${counters.skipped} · ⚠️ Erros: ${counters.errors} · 📄 Pág.: ${counters.pages || 1}`;
     }
+  
     updateProgressEta();
   }
 
@@ -1292,11 +1320,19 @@ Nossa equipe está à disposição para verificar o problema e orientar a melhor
     await delaySeconds(settings.minDelay, settings.maxDelay);
     if (!running) return 'stopped';
     await safeClick(submit, 'enviar resposta');
-    await waitFor(() => !modalIsOpen(), 22000, 'modal fechar após envio');
-    setShopeeReplyControlsHidden(false);
+    
+    // No envio real, algumas respostas da Shopee fecham/atualizam o modal de forma
+    // assíncrona e a confirmação visual pode demorar. O progresso é atualizado
+    // logo após o clique de envio para não deixar a barra aparentemente travada.
     counters.sent += 1;
     processedInRun.add(orderId);
     updateProgress();
+    
+    await waitFor(() => !modalIsOpen(), 22000, 'modal fechar após envio').catch(() => {
+      log('Envio acionado; não foi possível confirmar visualmente o fechamento do modal dentro do tempo limite.');
+    });
+    
+    setShopeeReplyControlsHidden(false);
     log(`Resposta enviada no pedido ${orderId}.`);
     await delaySeconds(settings.afterSubmitMin, settings.afterSubmitMax);
     return 'sent';
