@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Auto Responder Shopee - EduhCommerce",
   "version": "0.5.41",
-  "description": "Automação de respostas para avaliações da Shopee Seller Center, com respostas por estrelas, randomização, modo compacto, progresso, pausa/parada, tela Sobre, ícones, aceite obrigatório de termos e isenção de responsabilidade.",
+  "description": "Responda avaliações da Shopee com respostas por nota, modo teste, filtros e progresso em tempo real.",
   "permissions": [
     "storage"
   ],
