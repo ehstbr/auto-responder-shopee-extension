@@ -1,0 +1,7 @@
+Permissão storage:
+Usada para salvar localmente as configurações da extensão, respostas cadastradas, aceite dos termos e preferências de uso.
+
+Permissão https://seller.shopee.com.br/*:
+Necessária para que a extensão funcione dentro do Shopee Seller Center, leia a interface de avaliações e execute ações configuradas pelo usuário.
+
+A extensão não envia dados da conta Shopee para servidores da EduhCommerce.

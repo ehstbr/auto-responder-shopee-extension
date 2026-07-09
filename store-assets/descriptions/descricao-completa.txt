@@ -1,0 +1,7 @@
+Auto Responder Shopee é uma extensão gratuita da EduhCommerce criada para auxiliar vendedores Shopee a responder avaliações com mais agilidade.
+
+A ferramenta permite configurar respostas por quantidade de estrelas, testar antes de enviar, acompanhar o progresso, pausar/parar a execução e estimar o tempo restante.
+
+A extensão é não oficial e independente. Não é afiliada, endossada, mantida ou patrocinada pela Shopee.
+
+Use por sua conta e risco. O usuário é responsável por revisar suas respostas, configurações e garantir conformidade com as regras da plataforma.
