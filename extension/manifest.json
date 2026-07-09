@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Auto Responder Shopee - EduhCommerce",
-  "version": "0.5.41",
+  "version": "1.0.0",
   "description": "Responda avaliações da Shopee com respostas por nota, modo teste, filtros e progresso em tempo real.",
   "permissions": [
     "storage"
